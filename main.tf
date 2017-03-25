@@ -105,6 +105,13 @@ resource "google_container_cluster" "main" {
 
 data "external" "frontend_loadbalancer" {
   program = ["./wait-for-lb-ip.sh"]
+
+  /* result =
+    {
+    "name": frontend",
+    "external_ip": "127.0.0.1"
+    }
+  */
 }
 
 resource "google_dns_record_set" "main" {
