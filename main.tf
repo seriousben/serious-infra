@@ -54,16 +54,6 @@ resource "random_id" "master-password" {
   byte_length = 16
 }
 
-/* Leftovers of trying to not create a Loadbalancer from GKE
-resource "google_compute_target_pool" "main" {
-  name = "main"
-
-  lifecycle {
-    ignore_changes = ["instances"]
-  }
-}
-*/
-
 resource "google_container_cluster" "main" {
   name       = "main"
   zone       = "${var.region_zone}"
@@ -91,13 +81,6 @@ resource "google_container_cluster" "main" {
     ]
   }
 
-  /* Leftovers of trying to not create a Loadbalancer from GKE
-  provisioner "local-exec" {
-    description = "Add instance group manager backing this cluster to target group for loadbalancing"
-    command = "gcloud compute instance-groups managed set-target-pools \"$(echo '${element(google_container_cluster.main.instance_group_urls, 0)}' | sed 's/instanceGroup/instanceGroupManager/')\" --target-pools=${google_compute_target_pool.main.name}"
-  }
-  */
-
   provisioner "local-exec" {
     # description = "Install kubectl"
     command = "gcloud components install kubectl"
@@ -123,39 +106,6 @@ resource "google_container_cluster" "main" {
 data "external" "frontend_loadbalancer" {
   program = ["./wait-for-lb-ip.sh"]
 }
-
-/* Leftovers of trying to not create a Loadbalancer from GKE
-resource "google_compute_firewall" "main" {
-  name    = "main"
-  network    = "${google_compute_network.main.name}"
-
-  source_ranges = ["0.0.0.0/0"]
-
-  allow {
-    protocol = "tcp"
-    ports    = ["80", "8080", "443"]
-  }
-}
-
-resource "google_compute_forwarding_rule" "main" {
-  name = "main-http"
-  target = "${google_compute_target_pool.main.self_link}"
-  port_range = "8080"
-
-  # network    = "${google_compute_network.main.self_link}"
-  # subnetwork = "${google_compute_subnetwork.main.self_link}"
-}
-
-resource "google_dns_record_set" "main" {
-  name  = "${google_dns_managed_zone.main.dns_name}"
-  type  = "A"
-  ttl   = 300
-
-  managed_zone = "${google_dns_managed_zone.main.name}"
-
-  rrdatas = ["${google_compute_forwarding_rule.main.ip_address}"]
-}
-*/
 
 resource "google_dns_record_set" "main" {
   name  = "${google_dns_managed_zone.main.dns_name}"
