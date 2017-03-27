@@ -1,13 +1,17 @@
 #!/usr/bin/env bash
+#set -x
 set -e
 set -o pipefail
 
 ATTEMPT_SLEEP=10s
 MAX_ATTEMPT=30
 
+FRONTEND=${1:-frontend}
+NAMESPACE=${2:-default}
+
 get_lb_data() {
-    _service_json=$(kubectl get services -o json)
-    _lb_json=$(echo "$_service_json" | jq '.items | map(select(.metadata.name == "frontend")) | .[]')
+    _service_json=$(kubectl get services --namespace=$NAMESPACE -o json)
+    _lb_json=$(echo "$_service_json" | jq ".items | map(select(.metadata.name == \"$FRONTEND\")) | .[]")
     _data=$(echo "$_lb_json" | jq '{name: .metadata.name, external_ip: .status.loadBalancer.ingress | .[0].ip}')
     echo "$_data"
 }

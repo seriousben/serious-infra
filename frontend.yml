@@ -1,29 +1,73 @@
-kind: Service
 apiVersion: v1
+kind: Service
 metadata:
-  name: frontend
+  name: traefik-proxy
+  namespace: kube-system
 spec:
   selector:
-    app: nginx
+    k8s-app: traefik-ingress-lb
   ports:
-    - protocol: "TCP"
-      port: 80
-      targetPort: 80
+  - port: 80
+    targetPort: 80
   type: LoadBalancer
 ---
-apiVersion: extensions/v1beta1
-kind: Deployment
+apiVersion: v1
+kind: Service
 metadata:
-  name: nginx-deployment
+  name: traefik-web-ui
+  namespace: kube-system
 spec:
-  replicas: 2 # tells deployment to run 2 pods matching the template
+  selector:
+    k8s-app: traefik-ingress-lb
+  ports:
+  - port: 80
+    targetPort: 8080
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: traefik-web-ui
+  namespace: kube-system
+  annotations:
+    kubernetes.io/ingress.class: traefik
+    traefik.frontend.rule.type: PathPrefixStrip
+spec:
+  rules:
+  - host: projects.seriousben.com
+    http:
+      paths:
+      - path: /traefik
+        backend:
+          serviceName: traefik-web-ui
+          servicePort: 80
+---
+kind: Deployment
+apiVersion: extensions/v1beta1
+metadata:
+  name: traefik-ingress-controller
+  namespace: kube-system
+  labels:
+    k8s-app: traefik-ingress-lb
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      k8s-app: traefik-ingress-lb
   template:
     metadata:
       labels:
-        app: nginx
+        k8s-app: traefik-ingress-lb
+        name: traefik-ingress-lb
     spec:
+      terminationGracePeriodSeconds: 60
       containers:
-      - name: nginx
-        image: nginx:latest
+      - image: traefik
+        name: traefik-ingress-lb
         ports:
         - containerPort: 80
+        - containerPort: 443
+        - containerPort: 8080
+        args:
+        - --web
+        #- --web-path="/traefik"
+        - --kubernetes

@@ -69,7 +69,7 @@ resource "google_container_cluster" "main" {
   }
 
   node_config {
-    machine_type = "g1-small"
+    machine_type = "n1-standard-1"
 
     oauth_scopes = [
       "https://www.googleapis.com/auth/projecthosting",
@@ -104,14 +104,14 @@ resource "google_container_cluster" "main" {
 }
 
 data "external" "frontend_loadbalancer" {
-  program = ["./wait-for-lb-ip.sh"]
+  program = ["./wait-for-lb-ip.sh", "traefik-proxy", "kube-system"]
 
-  /* result =
-    {
-    "name": frontend",
-    "external_ip": "127.0.0.1"
-    }
-  */
+  //result =
+  //  {
+  //  "name": frontend",
+  //  "external_ip": "127.0.0.1"
+  //  }
+  //
 }
 
 resource "google_dns_record_set" "main" {
