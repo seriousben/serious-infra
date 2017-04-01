@@ -40,10 +40,10 @@ resource "google_compute_subnetwork" "main" {
   region        = "${var.region}"
 }
 
-resource "google_dns_managed_zone" "main" {
-  name        = "projects-seriousben-com"
-  dns_name    = "projects.seriousben.com."
-  description = "projects.seriousben.com DNS zone"
+resource "google_dns_managed_zone" "root" {
+  name        = "seriousben-com"
+  dns_name    = "seriousben.com."
+  description = "seriousben.com DNS zone"
 }
 
 resource "random_id" "master-password" {
@@ -107,19 +107,28 @@ data "external" "frontend_loadbalancer" {
   program = ["./wait-for-lb-ip.sh", "traefik-proxy", "kube-system"]
 
   //result =
-  //  {
+  //{
   //  "name": frontend",
   //  "external_ip": "127.0.0.1"
-  //  }
-  //
+  //}
 }
 
-resource "google_dns_record_set" "main" {
-  name  = "${google_dns_managed_zone.main.dns_name}"
+resource "google_dns_record_set" "root" {
+  name  = "seriousben.com."
   type  = "A"
   ttl   = 300
 
-  managed_zone = "${google_dns_managed_zone.main.name}"
+  managed_zone = "${google_dns_managed_zone.root.name}"
+
+  rrdatas = ["${data.external.frontend_loadbalancer.result.external_ip}"]
+}
+
+resource "google_dns_record_set" "newsblur-to-go" {
+  name  = "newsblur-to-go.seriousben.com."
+  type  = "A"
+  ttl   = 300
+
+  managed_zone = "${google_dns_managed_zone.root.name}"
 
   rrdatas = ["${data.external.frontend_loadbalancer.result.external_ip}"]
 }
