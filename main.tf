@@ -55,8 +55,8 @@ resource "random_id" "master-password" {
 }
 
 resource "google_container_cluster" "main" {
-  name       = "main"
-  zone       = "${var.region_zone}"
+  name = "main"
+  zone = "${var.region_zone}"
 
   network    = "${google_compute_network.main.name}"
   subnetwork = "${google_compute_subnetwork.main.name}"
@@ -98,7 +98,7 @@ resource "google_container_cluster" "main" {
 
   provisioner "local-exec" {
     # description = "Delete cluster frontend"
-    when = "destroy"
+    when    = "destroy"
     command = "kubectl delete -f frontend.yml"
   }
 }
@@ -114,9 +114,9 @@ data "external" "frontend_loadbalancer" {
 }
 
 resource "google_dns_record_set" "root" {
-  name  = "seriousben.com."
-  type  = "A"
-  ttl   = 300
+  name = "seriousben.com."
+  type = "A"
+  ttl  = 300
 
   managed_zone = "${google_dns_managed_zone.root.name}"
 
@@ -124,9 +124,9 @@ resource "google_dns_record_set" "root" {
 }
 
 resource "google_dns_record_set" "newsblur-to-go" {
-  name  = "newsblur-to-go.seriousben.com."
-  type  = "A"
-  ttl   = 300
+  name = "newsblur-to-go.seriousben.com."
+  type = "A"
+  ttl  = 300
 
   managed_zone = "${google_dns_managed_zone.root.name}"
 
