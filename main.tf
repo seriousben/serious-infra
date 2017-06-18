@@ -40,12 +40,6 @@ resource "google_compute_subnetwork" "main" {
   region        = "${var.region}"
 }
 
-resource "google_dns_managed_zone" "root" {
-  name        = "seriousben-com"
-  dns_name    = "seriousben.com."
-  description = "seriousben.com DNS zone"
-}
-
 resource "random_id" "master-password" {
   keepers = {
     region = "${var.region}"
@@ -113,6 +107,16 @@ data "external" "frontend_loadbalancer" {
   //}
 }
 
+////////////////////
+// SERIOUSBEN.COM
+////////////////////
+
+resource "google_dns_managed_zone" "root" {
+  name        = "seriousben-com"
+  dns_name    = "seriousben.com."
+  description = "seriousben.com DNS zone"
+}
+
 resource "google_dns_record_set" "root" {
   name = "seriousben.com."
   type = "A"
@@ -123,12 +127,62 @@ resource "google_dns_record_set" "root" {
   rrdatas = ["${data.external.frontend_loadbalancer.result.external_ip}"]
 }
 
-resource "google_dns_record_set" "newsblur-to-go" {
-  name = "newsblur-to-go.seriousben.com."
+resource "google_dns_record_set" "www-seriousben" {
+  name = "www.seriousben.com."
   type = "A"
   ttl  = 300
 
   managed_zone = "${google_dns_managed_zone.root.name}"
+
+  rrdatas = ["${data.external.frontend_loadbalancer.result.external_ip}"]
+}
+
+resource "google_dns_record_set" "traefik" {
+  name = "traefik.seriousben.com."
+  type = "A"
+  ttl  = 300
+
+  managed_zone = "${google_dns_managed_zone.root.name}"
+
+  rrdatas = ["${data.external.frontend_loadbalancer.result.external_ip}"]
+}
+
+////////////////////
+// VIDEO-BOOMERANG.COM
+////////////////////
+
+resource "google_dns_managed_zone" "video-boomerang" {
+  name        = "video-boomerang-com"
+  dns_name    = "video-boomerang.com."
+  description = "video-boomerang.com DNS zone"
+}
+
+resource "google_dns_record_set" "video-boomerang" {
+  name = "video-boomerang.com."
+  type = "A"
+  ttl  = 300
+
+  managed_zone = "${google_dns_managed_zone.video-boomerang.name}"
+
+  rrdatas = ["${data.external.frontend_loadbalancer.result.external_ip}"]
+}
+
+resource "google_dns_record_set" "www-video-boomerang" {
+  name = "www.video-boomerang.com."
+  type = "A"
+  ttl  = 300
+
+  managed_zone = "${google_dns_managed_zone.video-boomerang.name}"
+
+  rrdatas = ["${data.external.frontend_loadbalancer.result.external_ip}"]
+}
+
+resource "google_dns_record_set" "api-video-boomerang" {
+  name = "api.video-boomerang.com."
+  type = "A"
+  ttl  = 300
+
+  managed_zone = "${google_dns_managed_zone.video-boomerang.name}"
 
   rrdatas = ["${data.external.frontend_loadbalancer.result.external_ip}"]
 }
