@@ -53,6 +53,7 @@ metadata:
     k8s-app: traefik-ingress-lb
 spec:
   replicas: 1
+  revisionHistoryLimit: 2
   selector:
     matchLabels:
       k8s-app: traefik-ingress-lb
@@ -74,7 +75,7 @@ spec:
         persistentVolumeClaim:
           claimName: acme-pv
       containers:
-      - image: traefik:1.3.1-alpine
+      - image: traefik:1.3.5-alpine
         name: traefik-ingress-lb
         ports:
         - containerPort: 80
@@ -98,15 +99,15 @@ spec:
           readOnly: false
           mountPath: /acme
         - name: acme-dns
-          readOnly: true
+          readOnly: false
           mountPath: /secrets/acme-secret
         resources:
           limits:
             cpu: 100m
             memory: 30Mi
           requests:
-            cpu: 50m
-            memory: 20Mi
+            cpu: 0m
+            memory: 10Mi
         readinessProbe:
           tcpSocket:
             port: 80
@@ -136,26 +137,27 @@ data:
     [entryPoints]
       [entryPoints.http]
       address = ":80"
-      compress = true
+      [entryPoints.http.redirect]
+        entryPoint = "https"
       [entryPoints.https]
       address = ":443"
       compress = true
       [entryPoints.https.tls]
-    #[acme]
-    #email = "boudreau.benjamin@gmail.com"
-    #storage = "/acme/acme.json"
-    #entryPoint = "https"
-    #dnsProvider = "gcloud"
-    #acmeLogging = true
-    #onDemand = false
-    #onHostRule = false
+    [acme]
+    email = "boudreau.benjamin@gmail.com"
+    storage = "/acme/acme.json"
+    entryPoint = "https"
+    dnsProvider = "gcloud"
+    acmeLogging = true
+    onDemand = false
+    onHostRule = true
     #caServer = "https://acme-staging.api.letsencrypt.org/directory"
-    #[[acme.domains]]
-    #main = "seriousben.com"
-    #sans = ["www.seriousben.com", "traefik.seriousben.com"]
-    #[[acme.domains]]
-    #main = "video-boomerang.com"
-    #sans = ["www.video-boomerang.com", "api.video-boomerang.com"]
+    [[acme.domains]]
+    main = "seriousben.com"
+    sans = ["www.seriousben.com", "traefik.seriousben.com"]
+    [[acme.domains]]
+    main = "video-boomerang.com"
+    sans = ["www.video-boomerang.com", "api.video-boomerang.com"]
 ---
 kind: PersistentVolumeClaim
 apiVersion: v1
