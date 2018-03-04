@@ -30,7 +30,8 @@ provider "google" {
 }
 
 resource "google_compute_network" "main" {
-  name = "main-network"
+  name                    = "main-network"
+  auto_create_subnetworks = false
 }
 
 resource "google_compute_subnetwork" "main" {
@@ -55,25 +56,35 @@ resource "google_container_cluster" "main" {
   network    = "${google_compute_network.main.name}"
   subnetwork = "${google_compute_subnetwork.main.name}"
 
-  initial_node_count = 1
-
   master_auth {
     username = "admin"
     password = "${random_id.master-password.b64}"
   }
 
-  node_config {
-    machine_type = "n1-standard-1"
+  enable_legacy_abac = false
 
-    oauth_scopes = [
-      "https://www.googleapis.com/auth/projecthosting",
-      "https://www.googleapis.com/auth/devstorage.full_control",
-      "https://www.googleapis.com/auth/monitoring",
-      "https://www.googleapis.com/auth/logging.write",
-      "https://www.googleapis.com/auth/compute",
-      "https://www.googleapis.com/auth/cloud-platform",
-    ]
-  }
+  node_pool = [{
+    name       = "default"
+    node_count = 1
+
+    node_config {
+      machine_type = "n1-standard-2"
+
+      oauth_scopes = [
+        "https://www.googleapis.com/auth/projecthosting",
+        "https://www.googleapis.com/auth/devstorage.full_control",
+        "https://www.googleapis.com/auth/monitoring",
+        "https://www.googleapis.com/auth/logging.write",
+        "https://www.googleapis.com/auth/compute",
+        "https://www.googleapis.com/auth/cloud-platform",
+      ]
+    }
+
+    management {
+      auto_repair  = true
+      auto_upgrade = true
+    }
+  }]
 
   provisioner "local-exec" {
     # description = "Install kubectl"
@@ -86,19 +97,29 @@ resource "google_container_cluster" "main" {
   }
 
   provisioner "local-exec" {
-    # description = "Create cluster frontend"
-    command = "kubectl create -f frontend.yml"
+    # description = "Setup rbac"
+    command = "kubectl apply -f rbac-setup"
   }
 
   provisioner "local-exec" {
-    # description = "Delete cluster frontend"
+    # description = "Install helm"
+    command = "helm init --service-account tiller --wait"
+  }
+
+  provisioner "local-exec" {
+    # description = "Create cluster base services"
+    command = "helm upgrade --install base ./base-charts"
+  }
+
+  provisioner "local-exec" {
+    # description = "Delete cluster base services"
     when    = "destroy"
-    command = "kubectl delete -f frontend.yml"
+    command = "helm delete --purge base"
   }
 }
 
 data "external" "frontend_loadbalancer" {
-  program = ["./wait-for-lb-ip.sh", "traefik-proxy", "kube-system"]
+  program = ["./wait-for-lb-ip.sh", "base-nginx-ingress-controller", "default"]
 
   //result =
   //{
@@ -129,16 +150,6 @@ resource "google_dns_record_set" "root" {
 
 resource "google_dns_record_set" "www-seriousben" {
   name = "www.seriousben.com."
-  type = "A"
-  ttl  = 300
-
-  managed_zone = "${google_dns_managed_zone.root.name}"
-
-  rrdatas = ["${data.external.frontend_loadbalancer.result.external_ip}"]
-}
-
-resource "google_dns_record_set" "traefik" {
-  name = "traefik.seriousben.com."
   type = "A"
   ttl  = 300
 
