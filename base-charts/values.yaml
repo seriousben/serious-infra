@@ -1,0 +1,17 @@
+hyperkube:
+  repository: gcr.io/google-containers/hyperkube
+  tag: v1.9.2
+  pullPolicy: IfNotPresent
+
+cert-manager:
+  enabled: true
+  rbac:
+    create: true
+  ingressShim:
+    extraArgs:
+      - --default-issuer-name=base-acme-tls-issuer
+      - --default-issuer-kind=Issuer
+
+nginx-ingress:
+  rbac:
+    create: true
