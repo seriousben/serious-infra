@@ -1,4 +1,4 @@
-name: 'Terraform Pull Request Workflow'
+name: 'Terraform'
 
 on:
  pull_request:
@@ -6,8 +6,8 @@ on:
    - cron: '20 0 * * WED'
 
 jobs:
-  example:
-    name: 'Teraform Actions'
+  tf:
+    name: 'Terraform Actions'
     runs-on: ubuntu-latest
 
     steps:
