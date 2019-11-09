@@ -1,16 +1,19 @@
 name: 'Terraform Pull Request Workflow'
+
 on:
   - pull_request
+
 jobs:
   example:
     name: 'Terraform Actions'
     runs-on: ubuntu-latest
+
     steps:
       - name: 'Checkout'
         uses: actions/checkout@master
 
       - name: 'Prepare gcp credentials'
-        run: echo "$GOOGLE_CREDENTIAL_VALUE"; echo "$GOOGLE_CREDENTIAL_VALUE" | base64 -d;
+        run: mkdir -p _temp/tfcreds && echo "$GOOGLE_CREDENTIALS_VALUE" | base64 --decode -i > _temp/tfcreds/.google-credentials.json
         env:
           GOOGLE_CREDENTIALS_VALUE: ${{ secrets.GOOGLE_CREDENTIALS_VALUE }}
 
@@ -33,6 +36,7 @@ jobs:
           tf_actions_comment: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GOOGLE_APPLICATION_CREDENTIALS: _temp/tfcreds/.google-credentials.json
 
       - name: 'Terraform Validate'
         uses: hashicorp/terraform-github-actions@master
@@ -45,11 +49,13 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: 'Terraform Plan'
-        uses: hashicorp/terraform-github-actions@master
+        # uses: hashicorp/terraform-github-actions@master
+        uses: seriousben/terraform-github-actions@support-args
         with:
           tf_actions_version: 0.12.13
-          tf_actions_subcommand: 'plan'
+          tf_actions_subcommand: 'plan -lock=false'
           tf_actions_working_dir: '.'
           tf_actions_comment: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GOOGLE_APPLICATION_CREDENTIALS: _temp/tfcreds/.google-credentials.json

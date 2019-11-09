@@ -1,5 +1,5 @@
 resource "google_service_account" "terraform-viewer" {
-  account_id = "terraform-viewer"
+  account_id   = "terraform-viewer"
   display_name = "Terraform viewer for Continuous Integration"
 }
 
