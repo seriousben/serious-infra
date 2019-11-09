@@ -1,32 +1,10 @@
 terraform {
+  required_version = ">= 0.12"
+
   backend "gcs" {
-    bucket  = "tf-seriousben-states"
-    path    = "states/tf-projects-seriousben.tfstate"
-    project = "projects-seriousben"
+    bucket = "tf-seriousben-states"
+    path   = "states/tf-projects-seriousben.tfstate"
   }
-}
-
-variable "region" {
-  default = "us-east1"
-}
-
-variable "region_zone" {
-  default = "us-east1-d"
-}
-
-variable "project_name" {
-  default = "projects-seriousben"
-}
-
-variable "credentials_file_path" {
-  description = "Path to the JSON file used to describe your account credentials"
-  default     = "~/.gcloud/projects-seriousben.json"
-}
-
-provider "google" {
-  region      = "${var.region}"
-  project     = "${var.project_name}"
-  credentials = "${file(var.credentials_file_path)}"
 }
 
 resource "google_compute_network" "main" {
@@ -37,95 +15,63 @@ resource "google_compute_network" "main" {
 resource "google_compute_subnetwork" "main" {
   name          = "${var.project_name}-${var.region}"
   ip_cidr_range = "10.1.2.0/24"
-  network       = "${google_compute_network.main.self_link}"
-  region        = "${var.region}"
-}
-
-resource "random_id" "master-password" {
-  keepers = {
-    region = "${var.region}"
-  }
-
-  byte_length = 16
+  network       = google_compute_network.main.self_link
+  region        = var.region
 }
 
 resource "google_container_cluster" "main" {
   name = "main"
-  zone = "${var.region_zone}"
 
-  network    = "${google_compute_network.main.name}"
-  subnetwork = "${google_compute_subnetwork.main.name}"
+  network    = google_compute_network.main.name
+  subnetwork = google_compute_subnetwork.main.name
+
+  # We can't create a cluster with no node pool defined, but we want to only use
+  # separately managed node pools. So we create the smallest possible default
+  # node pool and immediately delete it.
+  remove_default_node_pool = true
+  initial_node_count       = 1
+
+  logging_service    = "none"
+  monitoring_service = "none"
 
   master_auth {
-    username = "admin"
-    password = "${random_id.master-password.b64}"
-  }
-
-  enable_legacy_abac = false
-
-  node_pool = [{
-    name       = "default"
-    node_count = 1
-
-    node_config {
-      machine_type = "n1-standard-2"
-
-      oauth_scopes = [
-        "https://www.googleapis.com/auth/projecthosting",
-        "https://www.googleapis.com/auth/devstorage.full_control",
-        "https://www.googleapis.com/auth/monitoring",
-        "https://www.googleapis.com/auth/logging.write",
-        "https://www.googleapis.com/auth/compute",
-        "https://www.googleapis.com/auth/cloud-platform",
-      ]
+    client_certificate_config {
+      issue_client_certificate = false
     }
+  }
 
-    management {
-      auto_repair  = true
-      auto_upgrade = true
+  addons_config {
+    http_load_balancing {
+      disabled = true
     }
-  }]
-
-  provisioner "local-exec" {
-    # description = "Install kubectl"
-    command = "gcloud components install kubectl"
-  }
-
-  provisioner "local-exec" {
-    # description = "Fetch cluster credentials for kubectl"
-    command = "gcloud container clusters get-credentials main"
-  }
-
-  provisioner "local-exec" {
-    # description = "Setup rbac"
-    command = "kubectl apply -f rbac-setup"
-  }
-
-  provisioner "local-exec" {
-    # description = "Install helm"
-    command = "helm init --service-account tiller --wait"
-  }
-
-  provisioner "local-exec" {
-    # description = "Create cluster base services"
-    command = "helm upgrade --install base ./base-charts"
-  }
-
-  provisioner "local-exec" {
-    # description = "Delete cluster base services"
-    when    = "destroy"
-    command = "helm delete --purge base"
+    horizontal_pod_autoscaling {
+      disabled = true
+    }
   }
 }
 
-data "external" "frontend_loadbalancer" {
-  program = ["./wait-for-lb-ip.sh", "base-nginx-ingress-controller", "default"]
+resource "google_container_node_pool" "main" {
+  name       = "main"
+  cluster    = "${google_container_cluster.main.name}"
+  node_count = 1
 
-  //result =
-  //{
-  //  "name": frontend",
-  //  "external_ip": "127.0.0.1"
-  //}
+  node_config {
+    disk_size_gb = 50
+    machine_type = "n1-standard-2"
+
+    oauth_scopes = [
+      "https://www.googleapis.com/auth/monitoring",
+      "https://www.googleapis.com/auth/logging.write",
+      "https://www.googleapis.com/auth/compute",
+      "https://www.googleapis.com/auth/cloud-platform",
+      "https://www.googleapis.com/auth/ndev.clouddns.readwrite"
+    ]
+  }
+
+  management {
+    auto_repair  = true
+    auto_upgrade = true
+  }
 }
 
 ////////////////////
@@ -138,62 +84,3 @@ resource "google_dns_managed_zone" "root" {
   description = "seriousben.com DNS zone"
 }
 
-resource "google_dns_record_set" "root" {
-  name = "seriousben.com."
-  type = "A"
-  ttl  = 300
-
-  managed_zone = "${google_dns_managed_zone.root.name}"
-
-  rrdatas = ["${data.external.frontend_loadbalancer.result.external_ip}"]
-}
-
-resource "google_dns_record_set" "www-seriousben" {
-  name = "www.seriousben.com."
-  type = "A"
-  ttl  = 300
-
-  managed_zone = "${google_dns_managed_zone.root.name}"
-
-  rrdatas = ["${data.external.frontend_loadbalancer.result.external_ip}"]
-}
-
-////////////////////
-// VIDEO-BOOMERANG.COM
-////////////////////
-
-resource "google_dns_managed_zone" "video-boomerang" {
-  name        = "video-boomerang-com"
-  dns_name    = "video-boomerang.com."
-  description = "video-boomerang.com DNS zone"
-}
-
-resource "google_dns_record_set" "video-boomerang" {
-  name = "video-boomerang.com."
-  type = "A"
-  ttl  = 300
-
-  managed_zone = "${google_dns_managed_zone.video-boomerang.name}"
-
-  rrdatas = ["${data.external.frontend_loadbalancer.result.external_ip}"]
-}
-
-resource "google_dns_record_set" "www-video-boomerang" {
-  name = "www.video-boomerang.com."
-  type = "A"
-  ttl  = 300
-
-  managed_zone = "${google_dns_managed_zone.video-boomerang.name}"
-
-  rrdatas = ["${data.external.frontend_loadbalancer.result.external_ip}"]
-}
-
-resource "google_dns_record_set" "api-video-boomerang" {
-  name = "api.video-boomerang.com."
-  type = "A"
-  ttl  = 300
-
-  managed_zone = "${google_dns_managed_zone.video-boomerang.name}"
-
-  rrdatas = ["${data.external.frontend_loadbalancer.result.external_ip}"]
-}
