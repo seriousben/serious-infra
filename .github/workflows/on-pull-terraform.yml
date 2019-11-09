@@ -1,11 +1,13 @@
 name: 'Terraform Pull Request Workflow'
 
 on:
-  - pull_request
+ pull_request:
+ schedule:
+   - cron: '20 0 * * WED'
 
 jobs:
   example:
-    name: 'Terraform Actions'
+    name: 'Teraform Actions'
     runs-on: ubuntu-latest
 
     steps:
@@ -49,6 +51,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: 'Terraform Plan'
+        id: 'tf-plan'
         # uses: hashicorp/terraform-github-actions@master
         uses: seriousben/terraform-github-actions@support-args
         with:
@@ -59,3 +62,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GOOGLE_APPLICATION_CREDENTIALS: _temp/tfcreds/.google-credentials.json
+
+      - name: 'Enforce no changes planned'
+        if: github.event_name == 'schedule' && steps.tf-plan.outputs.tf_actions_plan_has_changes == 'true'
+        run: exit 1
