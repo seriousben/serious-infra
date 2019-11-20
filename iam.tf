@@ -14,7 +14,7 @@ resource "google_service_account" "seriousben-com-deployer" {
 }
 
 resource "google_project_iam_member" "serousben-com-deployer" {
-  role   = "roles/container.developer"
+  role   = "roles/container.viewer"
   member = "serviceAccount:${google_service_account.seriousben-com-deployer.email}"
 }
 
@@ -24,7 +24,7 @@ resource "google_service_account" "newsblur-to-hugo-deployer" {
 }
 
 resource "google_project_iam_member" "newsblur-to-hugo-deployer" {
-  role   = "roles/container.developer"
+  role   = "roles/container.viewer"
   member = "serviceAccount:${google_service_account.newsblur-to-hugo-deployer.email}"
 }
 
