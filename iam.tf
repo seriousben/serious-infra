@@ -19,7 +19,7 @@ resource "google_project_iam_member" "serousben-com-deployer" {
 }
 
 resource "google_service_account" "newsblur-to-hugo-deployer" {
-  account_id   = "serousben-com-deployer"
+  account_id   = "newsblur-to-hugo-deployer"
   display_name = "https://github.com/seriousben/newsblur-to-hugo CD"
 }
 
