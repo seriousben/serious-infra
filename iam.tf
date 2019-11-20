@@ -18,3 +18,13 @@ resource "google_project_iam_member" "serousben-com-deployer" {
   member = "serviceAccount:${google_service_account.seriousben-com-deployer.email}"
 }
 
+resource "google_service_account" "newsblur-to-hugo-deployer" {
+  account_id   = "serousben-com-deployer"
+  display_name = "https://github.com/seriousben/newsblur-to-hugo CD"
+}
+
+resource "google_project_iam_member" "newsblur-to-hugo-deployer" {
+  role   = "roles/container.developer"
+  member = "serviceAccount:${google_service_account.newsblur-to-hugo-deployer.email}"
+}
+
