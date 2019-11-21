@@ -9,11 +9,11 @@ resource "google_project_iam_member" "terraform-all-viewer" {
 }
 
 resource "google_service_account" "seriousben-com-deployer" {
-  account_id   = "serousben-com-deployer"
+  account_id   = "seriousben-com-deployer"
   display_name = "https://github.com/seriousben/seriousben.com CD"
 }
 
-resource "google_project_iam_member" "serousben-com-deployer" {
+resource "google_project_iam_member" "seriousben-com-deployer" {
   role   = "roles/container.viewer"
   member = "serviceAccount:${google_service_account.seriousben-com-deployer.email}"
 }
