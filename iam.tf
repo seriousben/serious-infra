@@ -28,3 +28,13 @@ resource "google_project_iam_member" "newsblur-to-hugo-deployer" {
   member = "serviceAccount:${google_service_account.newsblur-to-hugo-deployer.email}"
 }
 
+resource "google_service_account" "serious-watcher-deployer" {
+  account_id   = "serious-watcher-deployer"
+  display_name = "https://github.com/seriousben/serious-watcher CD"
+}
+
+resource "google_project_iam_member" "serious-watcher-deployer" {
+  role   = "roles/container.viewer"
+  member = "serviceAccount:${google_service_account.serious-watcher-deployer.email}"
+}
+
