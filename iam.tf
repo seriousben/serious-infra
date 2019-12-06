@@ -64,3 +64,17 @@ resource "google_project_iam_member" "serious-watcher-backend" {
   member = "serviceAccount:${google_service_account.serious-watcher-backend.email}"
 }
 
+#####
+# club-canin-aylmer-members
+#####
+
+resource "google_service_account" "club-canin-aylmer-members-deployer" {
+  account_id   = "club-canin-members-deployer"
+  display_name = "https://github.com/seriousben/club-canin-aylmer-members CD"
+}
+
+resource "google_project_iam_member" "club-canin-aylmer-members-deployer" {
+  role   = "roles/container.viewer"
+  member = "serviceAccount:${google_service_account.club-canin-aylmer-members-deployer.email}"
+}
+
