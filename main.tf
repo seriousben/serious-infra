@@ -81,3 +81,12 @@ resource "google_dns_managed_zone" "root" {
   description = "seriousben.com DNS zone"
 }
 
+resource "google_dns_record_set" "keybase-txt-seriousben" {
+  name = "seriousben.com."
+  type = "txt"
+  ttl  = 300
+
+  managed_zone = "${google_dns_managed_zone.root.name}"
+
+  rrdatas = ["keybase-site-verification=s05rwHRqq8OLn4pdAopeD4HbTF-zYQAZEFxPaaoytd0"]
+}
