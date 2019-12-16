@@ -3,5 +3,5 @@ provider "google" {
   zone    = var.region_zone
   project = var.project_name
 
-  version = "~> 2.19.0"
+  version = "~> 3.2.0"
 }
