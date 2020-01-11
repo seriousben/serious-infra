@@ -49,7 +49,7 @@ resource "google_container_cluster" "main" {
 
 resource "google_container_node_pool" "main" {
   name       = "main"
-  cluster    = "${google_container_cluster.main.name}"
+  cluster    = google_container_cluster.main.name
   node_count = 1
 
   node_config {
@@ -82,11 +82,11 @@ resource "google_dns_managed_zone" "root" {
 }
 
 resource "google_dns_record_set" "keybase-txt-seriousben" {
-  name = "seriousben.com."
-  type = "txt"
+  name = "_keybase.${google_dns_managed_zone.root.dns_name}"
+  type = "TXT"
   ttl  = 300
 
-  managed_zone = "${google_dns_managed_zone.root.name}"
+  managed_zone = google_dns_managed_zone.root.name
 
-  rrdatas = ["keybase-site-verification=s05rwHRqq8OLn4pdAopeD4HbTF-zYQAZEFxPaaoytd0"]
+  rrdatas = ["keybase-site-verification=ERi_i6uGAAD2zab4lSiVDYlOXttrWBMlRFwuD3fykTk"]
 }
