@@ -7,70 +7,6 @@ terraform {
   }
 }
 
-resource "google_compute_network" "main" {
-  name                    = "main-network"
-  auto_create_subnetworks = false
-}
-
-resource "google_compute_subnetwork" "main" {
-  name          = "${var.project_name}-${var.region}"
-  ip_cidr_range = "10.1.2.0/24"
-  network       = google_compute_network.main.self_link
-  region        = var.region
-}
-
-resource "google_container_cluster" "main" {
-  name = "main"
-
-  network    = google_compute_network.main.name
-  subnetwork = google_compute_subnetwork.main.name
-
-  # We can't create a cluster with no node pool defined, but we want to only use
-  # separately managed node pools. So we create the smallest possible default
-  # node pool and immediately delete it.
-  remove_default_node_pool = true
-  initial_node_count       = 1
-
-  logging_service    = "none"
-  monitoring_service = "none"
-
-  master_auth {
-    client_certificate_config {
-      issue_client_certificate = false
-    }
-  }
-
-  addons_config {
-    horizontal_pod_autoscaling {
-      disabled = true
-    }
-  }
-}
-
-resource "google_container_node_pool" "main" {
-  name       = "main"
-  cluster    = google_container_cluster.main.name
-  node_count = 1
-
-  node_config {
-    disk_size_gb = 50
-    machine_type = "n1-standard-2"
-
-    oauth_scopes = [
-      "https://www.googleapis.com/auth/monitoring",
-      "https://www.googleapis.com/auth/logging.write",
-      "https://www.googleapis.com/auth/compute",
-      "https://www.googleapis.com/auth/cloud-platform",
-      "https://www.googleapis.com/auth/ndev.clouddns.readwrite"
-    ]
-  }
-
-  management {
-    auto_repair  = true
-    auto_upgrade = true
-  }
-}
-
 ////////////////////
 // SERIOUSBEN.COM
 ////////////////////
@@ -90,3 +26,43 @@ resource "google_dns_record_set" "keybase-txt-seriousben" {
 
   rrdatas = ["keybase-site-verification=ERi_i6uGAAD2zab4lSiVDYlOXttrWBMlRFwuD3fykTk"]
 }
+resource "google_dns_record_set" "github-pages-txt-seriousben" {
+  name = "_github-pages-challenge-seriousben.${google_dns_managed_zone.root.dns_name}"
+  type = "TXT"
+  ttl  = 300
+
+  managed_zone = google_dns_managed_zone.root.name
+
+  rrdatas = ["7234c2752e5658f71e93b4471ba20a"]
+}
+
+resource "google_dns_record_set" "github-pages-seriousben" {
+  name = google_dns_managed_zone.root.dns_name
+  type = "A"
+  ttl  = 300
+
+  managed_zone = google_dns_managed_zone.root.name
+
+  rrdatas = ["185.199.108.153", "185.199.109.153" ,"185.199.110.153", "185.199.111.153"]
+}
+
+resource "google_dns_record_set" "github-pages-www-seriousben" {
+  name = "www.${google_dns_managed_zone.root.dns_name}"
+  type = "CNAME"
+  ttl  = 300
+
+  managed_zone = google_dns_managed_zone.root.name
+
+  rrdatas = ["seriousben.github.io."]
+}
+
+resource "google_dns_record_set" "render-badges-seriousben" {
+  name = "badges.${google_dns_managed_zone.root.dns_name}"
+  type = "CNAME"
+  ttl  = 300
+
+  managed_zone = google_dns_managed_zone.root.name
+
+  rrdatas = ["seriousben-badges.onrender.com."]
+}
+
