@@ -70,3 +70,13 @@ resource "google_dns_record_set" "render-badges-seriousben" {
   rrdatas = ["seriousben-projects.onrender.com."]
 }
 
+resource "google_dns_record_set" "render-dev-idp-seriousben" {
+  name = "dev-idp.${google_dns_managed_zone.root.dns_name}"
+  type = "CNAME"
+  ttl  = 300
+
+  managed_zone = google_dns_managed_zone.root.name
+
+  rrdatas = ["seriousben-projects.onrender.com."]
+}
+
