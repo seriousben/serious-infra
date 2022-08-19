@@ -1,9 +1,13 @@
 terraform {
-  required_version = ">= 0.12"
+  required_version = ">= 1.0.11"
 
   backend "gcs" {
     bucket = "tf-seriousben-states"
-    path   = "states/tf-projects-seriousben.tfstate"
+  }
+  required_providers {
+    google = {
+      version = "~> 4.32.0"
+    }
   }
 }
 
@@ -43,7 +47,7 @@ resource "google_dns_record_set" "github-pages-seriousben" {
 
   managed_zone = google_dns_managed_zone.root.name
 
-  rrdatas = ["185.199.108.153", "185.199.109.153" ,"185.199.110.153", "185.199.111.153"]
+  rrdatas = ["185.199.108.153", "185.199.109.153", "185.199.110.153", "185.199.111.153"]
 }
 
 resource "google_dns_record_set" "github-pages-www-seriousben" {
@@ -56,13 +60,13 @@ resource "google_dns_record_set" "github-pages-www-seriousben" {
   rrdatas = ["seriousben.github.io."]
 }
 
-resource "google_dns_record_set" "render-badges-seriousben" {
+resource "google_dns_record_set" "render-projects-seriousben" {
   name = "badges.${google_dns_managed_zone.root.dns_name}"
   type = "CNAME"
   ttl  = 300
 
   managed_zone = google_dns_managed_zone.root.name
 
-  rrdatas = ["seriousben-badges.onrender.com."]
+  rrdatas = ["seriousben-projects.onrender.com."]
 }
 
