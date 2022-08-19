@@ -60,7 +60,7 @@ resource "google_dns_record_set" "github-pages-www-seriousben" {
   rrdatas = ["seriousben.github.io."]
 }
 
-resource "google_dns_record_set" "render-projects-seriousben" {
+resource "google_dns_record_set" "render-badges-seriousben" {
   name = "badges.${google_dns_managed_zone.root.dns_name}"
   type = "CNAME"
   ttl  = 300
